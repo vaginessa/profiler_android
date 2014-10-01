@@ -6,6 +6,7 @@ import android.app.Fragment;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.IntentFilter;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.view.ContextMenu;
 import android.view.LayoutInflater;
@@ -28,6 +29,7 @@ import java.util.List;
 public class ProfilesFragment extends Fragment {
     public static View rootV;
     public ArrayAdapterItem adapter;
+    public List<Profile> profiles = null;
 
     public ProfilesFragment() {
     }
@@ -36,16 +38,48 @@ public class ProfilesFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         rootV = inflater.inflate(R.layout.profiles, container, false);
-
         return rootV;
     }
+
+    private class GetAllProfiles extends AsyncTask<String, Void, String> {
+
+        @Override
+        protected String doInBackground(String... params) {
+            profiles = null;
+            profiles = ProfilesUtil.getAllProfiles();
+            while(profiles == null){
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+            return "";
+        }
+
+        @Override
+        protected void onPostExecute(String result) {
+            finishStart();
+        }
+
+        @Override
+        protected void onProgressUpdate(Void... values) {}
+    }
+
 
     @Override
     public void onStart() {
         super.onStart();
-        Profile[] profilesList = null;
+        try {
+            new GetAllProfiles().execute("");
+        }catch(Exception e){
+            e.printStackTrace();
+        }
+    }
+
+    public void finishStart(){
         ListView profilesListView = (ListView) rootV.findViewById(R.id.profileslist);
-        adapter = new ArrayAdapterItem(this.getActivity(), R.layout.profileslistitem, ProfilesUtil.getAllProfiles());
+        adapter = new ArrayAdapterItem(this.getActivity(), R.layout.profileslistitem, profiles);
         profilesListView.setAdapter(adapter);
         profilesListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
@@ -154,7 +188,6 @@ public class ProfilesFragment extends Fragment {
                 imageView.setImageDrawable(objectItem.icon);
             }
             return convertView;
-
         }
     }
 }

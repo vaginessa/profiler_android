@@ -51,7 +51,7 @@ public class ProfilesFragment extends Fragment {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
                 Profile profile = ((Profile) view.findViewById(R.id.profileAppName).getTag());
-                App.fileUtil.switchToProfile(profile.appComponent, Integer.parseInt(profile.profileNumber));
+                App.fileUtil.switchToProfile(profile);
             }
         });
 

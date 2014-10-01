@@ -47,15 +47,15 @@ public class ProfilesUtil {
                     ApplicationInfo appInfo = null;
 
                     File file = new File(profileDirectory, "package");
-                    String[] answer = new String[0];
+                    List<String> answer = new ArrayList<String>();
                     try {
                         List<String> comm = new ArrayList<String>();
                         comm.add("while read line; do echo \"$line\"; done < "+ file.getAbsolutePath());
-                        answer = ShellUtil.RunAsRoot(comm.toArray(new String[1]));
+                        answer = ShellUtil.RunAsRoot(comm);
                     }catch (SecurityException ee){
                         ee.printStackTrace();
                     }
-                    p.appComponent = answer[0];
+                    p.appComponent = answer.get(0);
 
                     try {
                         appInfo = pm.getApplicationInfo(p.appComponent, 0);
@@ -66,15 +66,15 @@ public class ProfilesUtil {
                     }
 
                     file = new File(profileDirectory, "profile");
-                    answer = new String[0];
+                    answer = new ArrayList<String>();
                     try {
                         List<String> comm = new ArrayList<String>();
                         comm.add("while read line; do echo \"$line\"; done < "+ file.getAbsolutePath());
-                        answer = ShellUtil.RunAsRoot(comm.toArray(new String[1]));
+                        answer = ShellUtil.RunAsRoot(comm);
                     }catch (SecurityException ee){
                         ee.printStackTrace();
                     }
-                    p.profileName = answer[0];
+                    p.profileName = answer.get(0);
                     profiles.add(p);
                 }
             }

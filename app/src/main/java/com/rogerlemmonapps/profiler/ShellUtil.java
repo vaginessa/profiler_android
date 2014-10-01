@@ -14,7 +14,7 @@ import java.util.List;
  */
 public class ShellUtil {
 
-    public static String[] RunAsRoot(String[] cmds){
+    public static List<String> RunAsRoot(List<String> cmds){
         List<String> output = new ArrayList<String>();
         String error = "";
         try{
@@ -23,6 +23,7 @@ public class ShellUtil {
             InputStream stderr = p.getErrorStream();
             InputStream stdout = p.getInputStream();
             for (String tmpCmd : cmds) {
+                Log.i("Profiler", "Run as root   " + tmpCmd);
                 os.writeBytes(tmpCmd+"\n");
             }
             os.writeBytes("exit\n");
@@ -46,6 +47,6 @@ public class ShellUtil {
 
 
         }
-        return output.toArray(new String[output.size()]);
+        return output;
     }
 }

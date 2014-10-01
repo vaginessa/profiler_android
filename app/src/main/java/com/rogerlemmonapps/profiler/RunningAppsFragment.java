@@ -57,7 +57,6 @@ public class RunningAppsFragment extends Fragment {
             try {
                 ComponentName comName= runn.topActivity;
                 String packageName = comName.getPackageName();
-
                 appInfo = pm.getApplicationInfo(packageName, 0);
                 app.appName = (String) pm.getApplicationLabel(appInfo);
                 app.icon = pm.getApplicationIcon(appInfo);

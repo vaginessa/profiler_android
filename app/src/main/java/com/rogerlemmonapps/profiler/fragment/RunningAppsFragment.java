@@ -10,6 +10,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -27,8 +28,11 @@ import android.widget.TextView;
 
 import com.rogerlemmonapps.profiler.App;
 import com.rogerlemmonapps.profiler.R;
+import com.rogerlemmonapps.profiler.constant.Constants;
+import com.rogerlemmonapps.profiler.data.CreateProfile;
 import com.rogerlemmonapps.profiler.data.RunningApp;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -37,7 +41,7 @@ import java.util.List;
 public class RunningAppsFragment extends Fragment {
     public static View rootV;
     static TextView profileName;
-    static CheckBox dontForceClose;
+    static CheckBox forceClose;
     static CheckBox launchApp;
 
     public RunningAppsFragment() {
@@ -82,28 +86,38 @@ public class RunningAppsFragment extends Fragment {
         runningAppsList.setAdapter(adapter);
         runningAppsList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
-            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+            public void onItemClick(final AdapterView<?> adapterView, View view, int i, long l) {
                 final RunningApp app = ((RunningApp) view.findViewById(R.id.appName).getTag());
                 final Dialog dialog = new Dialog(getActivity());
                 dialog.setContentView(R.layout.create_profile_dialog);
+                dialog.setTitle(String.format("Create (%s)", app.appName));
 
-                ListView foldersList = (ListView)dialog.findViewById(R.id.file_folders);
-                FoldersToUseArrayAdapter adapter = new FoldersToUseArrayAdapter(getActivity(), R.layout.filefolderslistitem, app.getApplicationFolders());
+                final ListView foldersList = (ListView)dialog.findViewById(R.id.file_folders);
+                final FoldersToUseArrayAdapter adapter = new FoldersToUseArrayAdapter(getActivity(), R.layout.filefolderslistitem, app.getApplicationFolders());
                 foldersList.setAdapter(adapter);
 
-                Button create = (Button)dialog.findViewById(R.id.create_profile_button);
+                final Button create = (Button)dialog.findViewById(R.id.create_profile_button);
                 Button cancel = (Button)dialog.findViewById(R.id.cancel_profile_button);
 
                 profileName = (TextView)dialog.findViewById(R.id.profile_name);
-
                 launchApp = (CheckBox)dialog.findViewById(R.id.launch_app);
-                dontForceClose = (CheckBox)dialog.findViewById(R.id.force_close);
+                forceClose = (CheckBox)dialog.findViewById(R.id.force_close);
 
                 create.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
-                        String value = profileName.getText().toString();
-                        App.fileUtil.createProfile(app, value, launchApp.isChecked(), dontForceClose.isChecked());
+                        List<String> folders = new ArrayList<String>();
+                        CreateProfile createProfile = new CreateProfile();
+                        createProfile.profileName = profileName.getText().toString();
+                        for (int i = 0; i < adapter.getCount(); i ++){
+                            CheckBox check = ((CheckBox)adapter.getView(i,null,null).findViewById(R.id.use_folder));
+                            if(check.isChecked())
+                                folders.add(check.getTag().toString());
+                        }
+                        createProfile.foldersToCopy = folders;
+                        createProfile.forceCloseApp = forceClose.isChecked();
+                        createProfile.launchApp = launchApp.isChecked();
+                        App.fileUtil.createProfile(app, createProfile);
                     }
                 });
                 cancel.setOnClickListener(new View.OnClickListener() {
@@ -154,9 +168,7 @@ public class RunningAppsFragment extends Fragment {
             textViewItem.setTag(objectItem);
 
             ImageView imageView = (ImageView)convertView.findViewById(R.id.appIcon);
-            if(objectItem.icon == null){
-
-            }else {
+            if(objectItem.icon != null){
                 imageView.setImageDrawable(objectItem.icon);
             }
             return convertView;
@@ -183,6 +195,7 @@ public class RunningAppsFragment extends Fragment {
             }
             CheckBox checkbox = (CheckBox) convertView.findViewById(R.id.use_folder);
             checkbox.setText(data[position]);
+            checkbox.setTag(Constants.BASE_APPS_DIR + data[position]);
             checkbox.setChecked(true);
             return convertView;
         }

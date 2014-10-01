@@ -7,6 +7,9 @@ import com.rogerlemmonapps.profiler.App;
 import com.rogerlemmonapps.profiler.constant.Constants;
 import com.rogerlemmonapps.profiler.data.Profile;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -48,7 +51,7 @@ public class ProfilesUtil {
                     PackageManager pm = App.app.getApplicationContext().getPackageManager();
                     ApplicationInfo appInfo = null;
 
-                    File file = new File(profileDirectory, "package");
+                    File file = new File(profileDirectory, "settings");
                     List<String> answer = new ArrayList<String>();
                     try {
                         List<String> comm = new ArrayList<String>();
@@ -57,6 +60,14 @@ public class ProfilesUtil {
                     }catch (SecurityException ee){
                         ee.printStackTrace();
                     }
+                    JSONObject settingsJson = null;
+                    try {
+                        settingsJson = new JSONObject(answer.get(0));
+                        p.profileName = settingsJson.getString("profileName");
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+
                     p.appComponent = answer.get(0);
 
                     try {
@@ -67,16 +78,6 @@ public class ProfilesUtil {
                         e.printStackTrace();
                     }
 
-                    file = new File(profileDirectory, "profile");
-                    answer = new ArrayList<String>();
-                    try {
-                        List<String> comm = new ArrayList<String>();
-                        comm.add("while read line; do echo \"$line\"; done < "+ file.getAbsolutePath());
-                        answer = ShellUtil.RunAsRoot(comm);
-                    }catch (SecurityException ee){
-                        ee.printStackTrace();
-                    }
-                    p.profileName = answer.get(0);
                     profiles.add(p);
                 }
             }

@@ -5,6 +5,7 @@ import android.util.Log;
 
 import com.rogerlemmonapps.profiler.App;
 import com.rogerlemmonapps.profiler.constant.Constants;
+import com.rogerlemmonapps.profiler.data.CreateProfile;
 import com.rogerlemmonapps.profiler.data.Profile;
 import com.rogerlemmonapps.profiler.data.RunningApp;
 
@@ -36,7 +37,7 @@ public class FileUtil {
         try {
             if(!lock){
                 delete(Constants.BASE_APPS_DIR + profile.appComponent + "/", false);
-                copyApplicationDataFolder(profile.appComponent, Integer.parseInt(profile.profileNumber), false);
+                copyApplicationDataFolder(profile.appComponent, Integer.parseInt(profile.profileNumber), null);
                 launchApplication(profile);
             }
         }catch(Exception e){
@@ -85,12 +86,12 @@ public class FileUtil {
         App.app.startActivity(LaunchIntent);
     }
 
-    public void createProfile(RunningApp app, String profileName, boolean launchApplication, boolean dontForceClose){
+    public void createProfile(RunningApp app, CreateProfile createProfile){
         try {
             String applicationName = app.appAddress;
             int lastProfileNum = ProfilesUtil.findLastProfileNum(applicationName);
             int profileNumber = lastProfileNum + 1;
-            copyApplicationDataFolder(applicationName, profileNumber, true);
+            copyApplicationDataFolder(applicationName, profileNumber, createProfile);
 
             //create settings directory
             File createProfilerSettings = new File(Constants.BASE_PROFILES_DIR + "/" + applicationName + "." + profileNumber + "/.profiler");
@@ -103,87 +104,40 @@ public class FileUtil {
                 ee.printStackTrace();
             }
 
-            //create settings file
-            //{"profileName":"profile name","appComponent":"application component", "launch app":"true", "dontForceClose" : "true"}
-            String json = String.format(
-                    "{\"profileName\":\"%s\",\"profileNumber\":\"%s\",\"appComponent\":\"s%\", \"launchApplication\":\"s%\", \"dontForceClose\" : \"s%\"}"
-                    , app.appName, profileNumber, app.topActivity, launchApplication, dontForceClose);
+            //create settings files
+            JSONObject settingsJson = new JSONObject();
+            settingsJson.put("profileName", createProfile.profileName.length() > 0 ? createProfile.profileName : profileNumber + "");
+            settingsJson.put("profileNumber", profileNumber);
+            settingsJson.put("appAddress", app.appAddress);
+            settingsJson.put("launchApp", createProfile.launchApp);
+            settingsJson.put("forceClose", createProfile.forceCloseApp);
 
-            JSONObject settingsJson = new JSONObject(json);
             File settingsFile = new File(createProfilerSettings.getPath(), "settings");
             try {
                 List<String> f = new ArrayList<String>();
-                f.add("echo \"" + settingsJson + "\" > " + settingsFile);
-                f.add("chmod 771 " + settingsFile);
+                f.add("echo \"" + settingsJson.toString().replace("\"", "\'") + "\" > " + settingsFile);
+                f.add("chmod 777 " + settingsFile);
                 ShellUtil.RunAsRoot(f);
             }catch (SecurityException ee){
                 ee.printStackTrace();
             }
-
-            // leaving for a little longer
-            /*//create package files
-            File packageFile = new File(createProfilerSettings.getPath(), "package");
-            try {
-                List<String> f = new ArrayList<String>();
-                f.add("echo \"" + applicationName + "\" > " + packageFile);
-                f.add("chmod 771 " + packageFile);
-                ShellUtil.RunAsRoot(f);
-            }catch (SecurityException ee){
-                ee.printStackTrace();
-            }
-
-            //create name file
-            File nameFile = new File(createProfilerSettings.getPath(), "profile");
-            try {
-                List<String> f = new ArrayList<String>();
-                String center = profileName!= null ? profileName : profileNumber + "";
-                String command = String.format("echo \"%s\" > %s", center, nameFile);
-                f.add(command);
-                f.add("chmod 771 " + nameFile);
-                ShellUtil.RunAsRoot(f);
-            }catch (SecurityException ee){
-                ee.printStackTrace();
-            }
-            */
-            //create pid file
-            /*File pidFile = new File(createProfilerSettings.getPath(), "pid");
-            try {
-                List<String> f = new ArrayList<String>();
-                ActivityManager activityManager = (ActivityManager) App.app
-                        .getSystemService(Context.ACTIVITY_SERVICE);
-                List<ActivityManager.RunningAppProcessInfo> pidsTask = activityManager.getRunningAppProcesses();
-                int thisShouldBeThePID = 0;
-                for(int i = 0; i < pidsTask.size(); i++){
-                    if(pidsTask.get(i).processName.contains(app.appAddress)){
-                        thisShouldBeThePID = pidsTask.get(i).uid;
-                    }
-                }
-                String center = thisShouldBeThePID + "";
-                String command = String.format("echo \"%s\" > %s", center, pidFile);
-                f.add(command);
-                f.add("chmod 771 " + pidFile);
-                ShellUtil.RunAsRoot(f);
-            }catch (SecurityException ee){
-                ee.printStackTrace();
-            }*/
-
         }catch(Exception e){
             e.printStackTrace();
         }
     }
 
-    private static void copyApplicationDataFolder(String applicationName, int number, boolean createProfile)
+    private static void copyApplicationDataFolder(String applicationName, int number, CreateProfile createProfile)
             throws IOException {
         copyApplicationDataFolder(applicationName, number, createProfile, false, "");
     }
 
-    private static void copyApplicationDataFolder(String applicationName, int number, boolean createProfile, boolean recurse, String filename)
+    private static void copyApplicationDataFolder(String applicationName, int number, CreateProfile createProfile, boolean recurse, String filename)
             throws IOException {
         if (!lock || recurse) {
             lock = true;
             File sourceLocation;
             File targetLocation;
-            if (createProfile) {
+            if (createProfile != null) {
                 sourceLocation = new File(Constants.BASE_APPS_DIR + applicationName + filename);
                 targetLocation = new File(Constants.BASE_PROFILES_DIR + applicationName + "." + number + filename );
             } else {
@@ -199,7 +153,7 @@ public class FileUtil {
             }catch (SecurityException ee){
                 ee.printStackTrace();
             }
-            if (sourceIsDir) {
+            if (sourceIsDir && (createProfile.foldersToCopy.contains(sourceLocation) || filename.length() == 0)) {
                 if (!targetLocation.exists()) {
                     //copy the whole directory -RPa to recurse, preserve perm and ownership
                     try {
@@ -252,8 +206,10 @@ public class FileUtil {
         return false;
     }
     static List<String> folders;
-
+    static String baseFolder;
     public static List<String> getApplicationFileFolders(String applicationAddress, String filename){
+        if(baseFolder == null)
+            baseFolder = applicationAddress;
         String start = filename != null && filename.length() > 0 ? filename : "";
         applicationAddress = applicationAddress + start;
         if(folders == null){
@@ -268,7 +224,7 @@ public class FileUtil {
             ee.printStackTrace();
         }
         if (sourceIsDir) {
-            folders.add(applicationAddress);
+            folders.add(applicationAddress.replace(baseFolder, ""));
             List<String> files = null;
             try {
                 List<String> f = new ArrayList<String>();

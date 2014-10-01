@@ -1,8 +1,8 @@
-package com.rogerlemmonapps.profiler;
+package com.rogerlemmonapps.profiler.constant;
 
 import android.content.Context;
 
-import java.io.File;
+import com.rogerlemmonapps.profiler.App;
 
 /**
  * Created by r on 9/29/2014.

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <item name="bar" type="color">#4AA6D9</item>
+    <item name="mid" type="color">#9AD0EC</item>
+    <item name="main" type="color">#BADFF2</item>
+    <item name="listOne" type="color">#D6E9F7</item>
+
+    <item name="white" type="color">#FFFFFF</item>
+
+</resources> 

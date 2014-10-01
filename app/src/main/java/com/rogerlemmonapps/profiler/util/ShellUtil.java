@@ -1,4 +1,4 @@
-package com.rogerlemmonapps.profiler;
+package com.rogerlemmonapps.profiler.util;
 
 import android.util.Log;
 

@@ -1,42 +1,22 @@
 package com.rogerlemmonapps.profiler;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Locale;
 
 import android.app.Activity;
-import android.app.ActionBar;
-import android.app.ActivityManager;
 import android.app.Fragment;
 import android.app.FragmentManager;
-import android.app.FragmentTransaction;
-import android.content.ComponentName;
-import android.content.Context;
-import android.content.pm.ApplicationInfo;
-import android.content.pm.PackageManager;
-import android.graphics.Bitmap;
-import android.graphics.drawable.Drawable;
 import android.support.v13.app.FragmentPagerAdapter;
 import android.os.Bundle;
 import android.support.v4.view.ViewPager;
-import android.util.Log;
-import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
-import android.widget.ImageView;
-import android.widget.ListView;
-import android.widget.TextView;
+
+import com.rogerlemmonapps.profiler.fragment.ProfilesFragment;
+import com.rogerlemmonapps.profiler.fragment.RunningAppsFragment;
+import com.rogerlemmonapps.profiler.fragment.ToolsFragment;
 
 
 public class Main extends Activity {
@@ -105,7 +85,7 @@ public class Main extends Activity {
 
                 case 1:return new RunningAppsFragment();
 
-                default:return new SettingsFragment();
+                default:return new ToolsFragment();
             }
         }
 

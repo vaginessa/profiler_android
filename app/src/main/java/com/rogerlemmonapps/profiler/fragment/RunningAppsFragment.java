@@ -1,8 +1,9 @@
-package com.rogerlemmonapps.profiler;
+package com.rogerlemmonapps.profiler.fragment;
 
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.AlertDialog;
+import android.app.Dialog;
 import android.app.Fragment;
 import android.content.ComponentName;
 import android.content.Context;
@@ -10,16 +11,23 @@ import android.content.DialogInterface;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
+
+import com.rogerlemmonapps.profiler.App;
+import com.rogerlemmonapps.profiler.R;
+import com.rogerlemmonapps.profiler.data.RunningApp;
 
 import java.util.List;
 
@@ -28,6 +36,10 @@ import java.util.List;
  */
 public class RunningAppsFragment extends Fragment {
     public static View rootV;
+    static TextView profileName;
+    static CheckBox dontForceClose;
+    static CheckBox launchApp;
+
     public RunningAppsFragment() {
     }
 
@@ -66,41 +78,52 @@ public class RunningAppsFragment extends Fragment {
             runningApps[i] = app;
         }
 
-        ArrayAdapterItem adapter = new ArrayAdapterItem(this.getActivity(), R.layout.runningappslistitem, runningApps);
+        RunningAppsArrayAdapter adapter = new RunningAppsArrayAdapter(this.getActivity(), R.layout.runningappslistitem, runningApps);
         runningAppsList.setAdapter(adapter);
         runningAppsList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                final RunningApp app = ((RunningApp)view.findViewById(R.id.appName).getTag());
-                AlertDialog.Builder alert = new AlertDialog.Builder(getActivity());
-                alert.setTitle("Profile name");
+                final RunningApp app = ((RunningApp) view.findViewById(R.id.appName).getTag());
+                final Dialog dialog = new Dialog(getActivity());
+                dialog.setContentView(R.layout.create_profile_dialog);
 
-                final EditText input = new EditText(getActivity());
-                alert.setView(input);
+                ListView foldersList = (ListView)dialog.findViewById(R.id.file_folders);
+                FoldersToUseArrayAdapter adapter = new FoldersToUseArrayAdapter(getActivity(), R.layout.filefolderslistitem, app.getApplicationFolders());
+                foldersList.setAdapter(adapter);
 
-                alert.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int whichButton) {
-                        String value = input.getText().toString();
-                        App.fileUtil.createProfile(app, value);
+                Button create = (Button)dialog.findViewById(R.id.create_profile_button);
+                Button cancel = (Button)dialog.findViewById(R.id.cancel_profile_button);
+
+                profileName = (TextView)dialog.findViewById(R.id.profile_name);
+
+                launchApp = (CheckBox)dialog.findViewById(R.id.launch_app);
+                dontForceClose = (CheckBox)dialog.findViewById(R.id.force_close);
+
+                create.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        String value = profileName.getText().toString();
+                        App.fileUtil.createProfile(app, value, launchApp.isChecked(), dontForceClose.isChecked());
                     }
                 });
-                alert.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int whichButton) {
+                cancel.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        dialog.cancel();
                     }
                 });
-                alert.show();
+                dialog.show();
             }
         });
     }
 
 
-    class ArrayAdapterItem extends ArrayAdapter<RunningApp> {
-
+    class RunningAppsArrayAdapter extends ArrayAdapter<RunningApp> {
         Context mContext;
         int layoutResourceId;
         RunningApp data[] = null;
 
-        public ArrayAdapterItem(Context mContext, int layoutResourceId, RunningApp[] data) {
+        public RunningAppsArrayAdapter(Context mContext, int layoutResourceId, RunningApp[] data) {
 
             super(mContext, layoutResourceId, data);
 
@@ -112,10 +135,15 @@ public class RunningAppsFragment extends Fragment {
         @Override
         public View getView(int position, View convertView, ViewGroup parent) {
             if(convertView==null){
-                // inflate the layout
                 LayoutInflater inflater = ((Activity) mContext).getLayoutInflater();
                 convertView = inflater.inflate(layoutResourceId, parent, false);
             }
+            if((position % 2) != 0){
+                ((LinearLayout)convertView.findViewById(R.id.runningapps_list_item)).setBackgroundResource(R.color.listOne);
+            }else{
+                ((LinearLayout)convertView.findViewById(R.id.runningapps_list_item)).setBackgroundResource(R.color.main);
+            }
+
 
             // object item based on the position
             RunningApp objectItem = data[position];
@@ -132,8 +160,31 @@ public class RunningAppsFragment extends Fragment {
                 imageView.setImageDrawable(objectItem.icon);
             }
             return convertView;
+        }
+    }
 
+    class FoldersToUseArrayAdapter extends ArrayAdapter<String> {
+        Context mContext;
+        int layoutResourceId;
+        String data[] = null;
+
+        public FoldersToUseArrayAdapter(Context mContext, int layoutResourceId, String[] data) {
+            super(mContext, layoutResourceId, data);
+            this.layoutResourceId = layoutResourceId;
+            this.mContext = mContext;
+            this.data = data;
         }
 
+        @Override
+        public View getView(int position, View convertView, ViewGroup parent) {
+            if(convertView==null){
+                LayoutInflater inflater = ((Activity) mContext).getLayoutInflater();
+                convertView = inflater.inflate(layoutResourceId, parent, false);
+            }
+            CheckBox checkbox = (CheckBox) convertView.findViewById(R.id.use_folder);
+            checkbox.setText(data[position]);
+            checkbox.setChecked(true);
+            return convertView;
+        }
     }
 }

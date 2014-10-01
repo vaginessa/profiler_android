@@ -1,11 +1,13 @@
-package com.rogerlemmonapps.profiler;
+package com.rogerlemmonapps.profiler.util;
 
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 
-import java.io.BufferedReader;
+import com.rogerlemmonapps.profiler.App;
+import com.rogerlemmonapps.profiler.constant.Constants;
+import com.rogerlemmonapps.profiler.data.Profile;
+
 import java.io.File;
-import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;

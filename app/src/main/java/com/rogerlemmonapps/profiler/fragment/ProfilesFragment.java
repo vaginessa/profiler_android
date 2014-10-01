@@ -1,13 +1,13 @@
-package com.rogerlemmonapps.profiler;
+package com.rogerlemmonapps.profiler.fragment;
 
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Fragment;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.content.IntentFilter;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.ContextMenu;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -18,8 +18,16 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
+
+import com.rogerlemmonapps.profiler.App;
+import com.rogerlemmonapps.profiler.constant.Constants;
+import com.rogerlemmonapps.profiler.data.Profile;
+import com.rogerlemmonapps.profiler.R;
+import com.rogerlemmonapps.profiler.util.ProfilesUtil;
 
 import java.util.List;
 
@@ -30,6 +38,7 @@ public class ProfilesFragment extends Fragment {
     public static View rootV;
     public ArrayAdapterItem adapter;
     public List<Profile> profiles = null;
+    public ProgressBar progress;
 
     public ProfilesFragment() {
     }
@@ -45,31 +54,44 @@ public class ProfilesFragment extends Fragment {
 
         @Override
         protected String doInBackground(String... params) {
-            profiles = null;
-            profiles = ProfilesUtil.getAllProfiles();
-            while(profiles == null){
-                try {
-                    Thread.sleep(500);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
+            try {
+                progress.setVisibility(View.VISIBLE);
+                progress.setIndeterminate(true);
+                profiles = null;
+                profiles = ProfilesUtil.getAllProfiles();
+                while (profiles == null) {
+                    try {
+                        Thread.sleep(500);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
                 }
+            }catch(Exception e){
+                Log.e("Profiler", "View gone");
             }
             return "";
         }
 
         @Override
         protected void onPostExecute(String result) {
-            finishStart();
+            try {
+                finishStart();
+
+            }catch (Exception e){
+                e.printStackTrace();
+            }
         }
 
         @Override
-        protected void onProgressUpdate(Void... values) {}
+        protected void onProgressUpdate(Void... values) {
+        }
     }
 
 
     @Override
     public void onStart() {
         super.onStart();
+        progress = (ProgressBar)this.getActivity().findViewById(R.id.progress);
         try {
             new GetAllProfiles().execute("");
         }catch(Exception e){
@@ -110,6 +132,9 @@ public class ProfilesFragment extends Fragment {
             }
 
         });
+
+        progress.setVisibility(View.GONE);
+        progress.setIndeterminate(false);
     }
 
     @Override
@@ -171,6 +196,11 @@ public class ProfilesFragment extends Fragment {
             if (convertView == null) {
                 LayoutInflater inflater = ((Activity) mContext).getLayoutInflater();
                 convertView = inflater.inflate(layoutResourceId, parent, false);
+            }
+            if((position % 2) != 0){
+                ((LinearLayout)convertView.findViewById(R.id.profiles_list_item)).setBackgroundResource(R.color.listOne);
+            }else{
+                ((LinearLayout)convertView.findViewById(R.id.profiles_list_item)).setBackgroundResource(R.color.main);
             }
             Profile objectItem = data.get(position);
 

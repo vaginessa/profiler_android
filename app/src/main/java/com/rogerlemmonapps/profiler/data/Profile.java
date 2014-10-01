@@ -1,4 +1,4 @@
-package com.rogerlemmonapps.profiler;
+package com.rogerlemmonapps.profiler.data;
 
 import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;

@@ -2,6 +2,7 @@ package com.rogerlemmonapps.profiler.util;
 
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
+import android.util.JsonReader;
 
 import com.rogerlemmonapps.profiler.App;
 import com.rogerlemmonapps.profiler.constant.Constants;
@@ -62,13 +63,14 @@ public class ProfilesUtil {
                     }
                     JSONObject settingsJson = null;
                     try {
-                        settingsJson = new JSONObject(answer.get(0));
+                        settingsJson = new JSONObject(answer.get(0).replace("\'", "\'"));
                         p.profileName = settingsJson.getString("profileName");
+                        p.appComponent = settingsJson.getString("appAddress");
                     } catch (JSONException e) {
                         e.printStackTrace();
                     }
 
-                    p.appComponent = answer.get(0);
+
 
                     try {
                         appInfo = pm.getApplicationInfo(p.appComponent, 0);

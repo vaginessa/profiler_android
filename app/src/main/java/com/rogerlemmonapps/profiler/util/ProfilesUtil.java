@@ -1,7 +1,12 @@
 package com.rogerlemmonapps.profiler.util;
 
+import android.content.ComponentName;
+import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.util.JsonReader;
 
 import com.rogerlemmonapps.profiler.App;
@@ -24,6 +29,7 @@ import java.util.List;
  */
 
 public class ProfilesUtil {
+
     public static int findLastProfileNum(String applicationName){
         int lastProfileNumber = 0;
         File f = new File(Constants.BASE_PROFILES_DIR);
@@ -87,6 +93,52 @@ public class ProfilesUtil {
             }
         }
         return profiles;
+    }
+
+    public static Profile getProfileByAddress(String profileAddress){
+        Profile profile = new Profile();
+        File f = new File(Constants.BASE_PROFILES_DIR + profileAddress);
+        File[] files = f.listFiles();
+        if (files != null) {
+            for (File inFile : files) {
+                if (inFile.isDirectory()) {
+                    File profileDirectory = new File(inFile.getPath() + "/.profiler/");
+                    profile.profileNumber = inFile.getPath().substring(inFile.getPath().lastIndexOf('.') + 1, inFile.getPath().length());
+                    PackageManager pm = App.app.getApplicationContext().getPackageManager();
+                    ApplicationInfo appInfo = null;
+
+                    File file = new File(profileDirectory, "settings");
+                    List<String> answer = new ArrayList<String>();
+                    try {
+                        List<String> comm = new ArrayList<String>();
+                        comm.add("while read line; do echo \"$line\"; done < "+ file.getAbsolutePath());
+                        answer = ShellUtil.RunAsRoot(comm);
+                    }catch (SecurityException ee){
+                        ee.printStackTrace();
+                    }
+                    JSONObject settingsJson = null;
+                    try {
+                        settingsJson = new JSONObject(answer.get(0).replace("\'", "\'"));
+                        profile.profileName = settingsJson.getString("profileName");
+                        profile.appComponent = settingsJson.getString("appAddress");
+                        profile.forceClose = settingsJson.getBoolean("forceClose");
+                        profile.launchApp = settingsJson.getBoolean("launchApp");
+                       // profile.appTopActivity = settingsJson.getString("topActivity");
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+
+                    try {
+                        appInfo = pm.getApplicationInfo(profile.appComponent, 0);
+                        profile.appName = (String) pm.getApplicationLabel(appInfo);
+                        profile.icon = pm.getApplicationIcon(appInfo);
+                    } catch (PackageManager.NameNotFoundException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }
+        return profile;
     }
 
     public static void renameProfile(Profile profileToUse, String value) {
@@ -160,6 +212,32 @@ public class ProfilesUtil {
                 fileUtil.launchApplication(profile);
             }
         }catch(Exception e){
+            e.printStackTrace();
+        }
+    }
+
+    public static void createShortcut(Profile profile){
+        Intent shortcutIntent = new Intent();
+        shortcutIntent.setClassName(Constants.PROFILER_PACKAGE, Constants.SHORTCUTS_ENTRY);
+        shortcutIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        shortcutIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+
+        Intent addIntent = new Intent();
+        addIntent.putExtra(Intent.EXTRA_SHORTCUT_INTENT, shortcutIntent);
+        addIntent.putExtra(Intent.EXTRA_SHORTCUT_NAME, profile.profileName);
+        try {
+            PackageManager pm = App.app.getPackageManager();
+            Intent launchIntent = pm.getLaunchIntentForPackage(profile.appComponent);
+            String className = launchIntent.getComponent().getClassName();
+            Drawable drawable = pm.getActivityInfo(new ComponentName(profile.appComponent, className), 0).loadIcon(pm) ;
+            Bitmap b = ((BitmapDrawable)drawable).getBitmap() ;
+            addIntent.putExtra(Intent.EXTRA_SHORTCUT_ICON, b) ;
+
+            ApplicationInfo appInfo = pm.getApplicationInfo(profile.appComponent, 0);
+            addIntent.putExtra(Intent.EXTRA_SHORTCUT_ICON_RESOURCE, appInfo.icon);
+            addIntent.setAction("com.android.launcher.action.INSTALL_SHORTCUT");
+            App.app.sendBroadcast(addIntent);
+        }catch(PackageManager.NameNotFoundException e){
             e.printStackTrace();
         }
     }

@@ -24,6 +24,7 @@ public class FileUtil {
     public static Profile profile;
 
     public FileUtil(){
+        this.profile = new Profile();
         init();
     }
 

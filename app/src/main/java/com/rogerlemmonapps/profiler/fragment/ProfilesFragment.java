@@ -129,6 +129,8 @@ public class ProfilesFragment extends Fragment {
                 menu.setHeaderTitle(profile.appName + ":" + profile.profileName);
                 menu.add(Menu.NONE, Constants.MENU_CONTEXT_RENAME_PROFILE, Menu.NONE, "Rename Profile");
                 menu.add(Menu.NONE, Constants.MENU_CONTEXT_DELETE_PROFILE, Menu.NONE, "Delete Profile");
+                menu.add(Menu.NONE, Constants.MENU_CONTEXT_CREATE_SHORTCUT, Menu.NONE, "Create Shortcut");
+
             }
 
         });
@@ -174,6 +176,9 @@ public class ProfilesFragment extends Fragment {
                 });
 
                 alert.show();
+            }
+            case Constants.MENU_CONTEXT_CREATE_SHORTCUT:{
+                ProfilesUtil.createShortcut(profileToUse);
             }
         }
         return false;

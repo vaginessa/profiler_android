@@ -150,12 +150,29 @@ public class ProfilesFragment extends Fragment {
         final Profile profileToUse = adapter.getItem(info.position);
         switch (item.getItemId()) {
             case Constants.MENU_CONTEXT_DELETE_PROFILE: {
-                adapter.remove(profileToUse);
-                App.fileUtil.deleteApplicationFolders(Constants.BASE_PROFILES_DIR + profileToUse.appComponent + "." + profileToUse.profileNumber, true);
-                return true;
+                AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(getActivity());
+                alertDialogBuilder.setTitle("Delete?");
+                alertDialogBuilder
+                        .setMessage("Really delete " + profileToUse.appName + ":" + profileToUse.profileName)
+                        .setCancelable(false)
+                        .setPositiveButton("Yes",new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog,int id) {
+                                adapter.remove(profileToUse);
+                                App.fileUtil.deleteApplicationFolders(Constants.BASE_PROFILES_DIR + profileToUse.appComponent + "." + profileToUse.profileNumber, true);
+                                dialog.cancel();
+                            }
+                        })
+                        .setNegativeButton("No", new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int id) {
+                                dialog.cancel();
+                            }
+                        });
+                AlertDialog alertDialog = alertDialogBuilder.create();
+                alertDialog.show();
+                return false;
             }
             case Constants.MENU_CONTEXT_RENAME_PROFILE: {
-                AlertDialog.Builder alert = new AlertDialog.Builder(getActivity());
+                final AlertDialog.Builder alert = new AlertDialog.Builder(getActivity());
                 alert.setTitle("Edit profile name");
 
                 final EditText input = new EditText(getActivity());
@@ -174,8 +191,8 @@ public class ProfilesFragment extends Fragment {
                     public void onClick(DialogInterface dialog, int whichButton) {
                     }
                 });
-
                 alert.show();
+                return true;
             }
             case Constants.MENU_CONTEXT_CREATE_SHORTCUT:{
                 ProfilesUtil.createShortcut(profileToUse);

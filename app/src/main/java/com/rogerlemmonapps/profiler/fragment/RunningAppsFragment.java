@@ -119,6 +119,7 @@ public class RunningAppsFragment extends Fragment {
                         createProfile.forceCloseApp = forceClose.isChecked();
                         createProfile.launchApp = launchApp.isChecked();
                         ProfilesUtil.createProfile(app, createProfile);
+                        dialog.cancel();
                     }
                 });
                 cancel.setOnClickListener(new View.OnClickListener() {

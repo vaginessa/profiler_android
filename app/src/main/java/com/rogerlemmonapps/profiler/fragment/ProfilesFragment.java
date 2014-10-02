@@ -107,7 +107,7 @@ public class ProfilesFragment extends Fragment {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
                 Profile profile = ((Profile) view.findViewById(R.id.profileAppName).getTag());
-                App.fileUtil.switchToProfile(profile);
+                ProfilesUtil.switchToProfile(profile);
             }
         });
 
@@ -149,7 +149,7 @@ public class ProfilesFragment extends Fragment {
         switch (item.getItemId()) {
             case Constants.MENU_CONTEXT_DELETE_PROFILE: {
                 adapter.remove(profileToUse);
-                App.fileUtil.delete(Constants.BASE_PROFILES_DIR + profileToUse.appComponent + "." + profileToUse.profileNumber, true );
+                App.fileUtil.deleteApplicationFolders(Constants.BASE_PROFILES_DIR + profileToUse.appComponent + "." + profileToUse.profileNumber, true);
                 return true;
             }
             case Constants.MENU_CONTEXT_RENAME_PROFILE: {

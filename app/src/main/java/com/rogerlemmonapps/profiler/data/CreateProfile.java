@@ -10,5 +10,4 @@ public class CreateProfile {
     public boolean launchApp;
     public boolean forceCloseApp;
     public String profileName;
-
 }

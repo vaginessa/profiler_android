@@ -6,7 +6,9 @@ import android.util.JsonReader;
 
 import com.rogerlemmonapps.profiler.App;
 import com.rogerlemmonapps.profiler.constant.Constants;
+import com.rogerlemmonapps.profiler.data.CreateProfile;
 import com.rogerlemmonapps.profiler.data.Profile;
+import com.rogerlemmonapps.profiler.data.RunningApp;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -66,11 +68,11 @@ public class ProfilesUtil {
                         settingsJson = new JSONObject(answer.get(0).replace("\'", "\'"));
                         p.profileName = settingsJson.getString("profileName");
                         p.appComponent = settingsJson.getString("appAddress");
+                        p.forceClose = settingsJson.getBoolean("forceClose");
+                        p.launchApp = settingsJson.getBoolean("launchApp");
                     } catch (JSONException e) {
                         e.printStackTrace();
                     }
-
-
 
                     try {
                         appInfo = pm.getApplicationInfo(p.appComponent, 0);
@@ -108,4 +110,58 @@ public class ProfilesUtil {
             e.printStackTrace();
         }
     }
+
+    public static void createProfile(RunningApp app, CreateProfile createProfile){
+        try {
+            String applicationName = app.appAddress;
+            int lastProfileNum = ProfilesUtil.findLastProfileNum(applicationName);
+            int profileNumber = lastProfileNum + 1;
+            new FileUtil().copyApplicationDataFolder(applicationName, profileNumber, createProfile);
+
+            //create settings directory
+            File createProfilerSettings = new File(Constants.BASE_PROFILES_DIR + "/" + applicationName + "." + profileNumber + "/.profiler");
+            try {
+                List<String> f = new ArrayList<String>();
+                f.add("mkdir " + createProfilerSettings);
+                f.add("chmod 771 " + createProfilerSettings);
+                ShellUtil.RunAsRoot(f);
+            }catch (SecurityException ee){
+                ee.printStackTrace();
+            }
+
+            //create settings files
+            JSONObject settingsJson = new JSONObject();
+            settingsJson.put("profileName", createProfile.profileName.length() > 0 ? createProfile.profileName : profileNumber + "");
+            settingsJson.put("profileNumber", profileNumber);
+            settingsJson.put("appAddress", app.appAddress);
+            settingsJson.put("launchApp", createProfile.launchApp);
+            settingsJson.put("forceClose", createProfile.forceCloseApp);
+
+            File settingsFile = new File(createProfilerSettings.getPath(), "settings");
+            try {
+                List<String> f = new ArrayList<String>();
+                f.add("echo \"" + settingsJson.toString().replace("\"", "\'") + "\" > " + settingsFile);
+                f.add("chmod 777 " + settingsFile);
+                ShellUtil.RunAsRoot(f);
+            }catch (SecurityException ee){
+                ee.printStackTrace();
+            }
+        }catch(Exception e){
+            e.printStackTrace();
+        }
+    }
+
+    public static void switchToProfile(Profile profile){
+        try {
+            if(!profile.lock){
+                FileUtil fileUtil = new FileUtil(profile);
+                fileUtil.deleteApplicationFolders(Constants.BASE_APPS_DIR + profile.appComponent + "/", false);
+                fileUtil.copyApplicationDataFolder(profile.appComponent, Integer.parseInt(profile.profileNumber), null);
+                fileUtil.launchApplication(profile);
+            }
+        }catch(Exception e){
+            e.printStackTrace();
+        }
+    }
+
 }

@@ -31,6 +31,7 @@ import com.rogerlemmonapps.profiler.R;
 import com.rogerlemmonapps.profiler.constant.Constants;
 import com.rogerlemmonapps.profiler.data.CreateProfile;
 import com.rogerlemmonapps.profiler.data.RunningApp;
+import com.rogerlemmonapps.profiler.util.ProfilesUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -117,7 +118,7 @@ public class RunningAppsFragment extends Fragment {
                         createProfile.foldersToCopy = folders;
                         createProfile.forceCloseApp = forceClose.isChecked();
                         createProfile.launchApp = launchApp.isChecked();
-                        App.fileUtil.createProfile(app, createProfile);
+                        ProfilesUtil.createProfile(app, createProfile);
                     }
                 });
                 cancel.setOnClickListener(new View.OnClickListener() {

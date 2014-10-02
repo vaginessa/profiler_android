@@ -21,11 +21,16 @@ import java.util.List;
  */
 
 public class FileUtil {
-
-    private static boolean lock;
+    public static Profile profile;
 
     public FileUtil(){
         init();
+    }
+
+    public FileUtil(Profile profile){
+        this.profile = profile;
+        init();
+
     }
     public static void init(){
         File baseProfilesDirectory = new File(Constants.BASE_PROFILES_DIR);
@@ -33,108 +38,60 @@ public class FileUtil {
             baseProfilesDirectory.mkdir();
     }
 
-    public void switchToProfile(Profile profile){
-        try {
-            if(!lock){
-                delete(Constants.BASE_APPS_DIR + profile.appComponent + "/", false);
-                copyApplicationDataFolder(profile.appComponent, Integer.parseInt(profile.profileNumber), null);
-                launchApplication(profile);
-            }
-        }catch(Exception e){
-            e.printStackTrace();
-        }
-    }
-
-    private void launchApplication(Profile profile) {
+    public void launchApplication(Profile profile) {
         String thisShouldBeThePID = "0";
         List<String> answer = null;
 
-        //get the apps pid from shell
-        try {
-            List<String> comm = new ArrayList<String>();
-            comm.add("ps | grep '" + profile.appComponent + "'");
-            answer = ShellUtil.RunAsRoot(comm);
-            //this is hacky as shit
-            if(answer.size() > 0) {
-                //split by 3 spaces and take the second result
-                String[] temp = answer.get(0).split("   ");
-                //take the first number till the first space
-                thisShouldBeThePID = temp[1].substring(0, temp[1].indexOf(" "));
-            }
-        }catch (SecurityException ee){
-            ee.printStackTrace();
-        }
-
-        //kill the app with sudo
-        try {
-            if(Integer.parseInt(thisShouldBeThePID) > 0) {
-                try {
-                    List<String> comm = new ArrayList<String>();
-                    comm.add("kill " + thisShouldBeThePID);
-                    ShellUtil.RunAsRoot(comm);
-                } catch (SecurityException ee) {
-                    ee.printStackTrace();
+        if(profile.forceClose) {
+            //get the apps pid from shell
+            try {
+                List<String> comm = new ArrayList<String>();
+                comm.add("ps | grep '" + profile.appComponent + "'");
+                answer = ShellUtil.RunAsRoot(comm);
+                //this is hacky as shit
+                if (answer.size() > 0) {
+                    //split by 3 spaces and take the second result
+                    String[] temp = answer.get(0).split("   ");
+                    //take the first number till the first space
+                    thisShouldBeThePID = temp[1].substring(0, temp[1].indexOf(" "));
                 }
-            }
-        }catch (NumberFormatException ex){
-            Log.e("Profiler", thisShouldBeThePID + " is not a valid integer");
-        }
-
-        //run the app
-        Intent LaunchIntent = App.app.getPackageManager().getLaunchIntentForPackage(profile.appComponent);
-        LaunchIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP  | Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
-        App.app.startActivity(LaunchIntent);
-    }
-
-    public void createProfile(RunningApp app, CreateProfile createProfile){
-        try {
-            String applicationName = app.appAddress;
-            int lastProfileNum = ProfilesUtil.findLastProfileNum(applicationName);
-            int profileNumber = lastProfileNum + 1;
-            copyApplicationDataFolder(applicationName, profileNumber, createProfile);
-
-            //create settings directory
-            File createProfilerSettings = new File(Constants.BASE_PROFILES_DIR + "/" + applicationName + "." + profileNumber + "/.profiler");
-            try {
-                List<String> f = new ArrayList<String>();
-                f.add("mkdir " + createProfilerSettings);
-                f.add("chmod 771 " + createProfilerSettings);
-                ShellUtil.RunAsRoot(f);
-            }catch (SecurityException ee){
+            } catch (SecurityException ee) {
                 ee.printStackTrace();
             }
 
-            //create settings files
-            JSONObject settingsJson = new JSONObject();
-            settingsJson.put("profileName", createProfile.profileName.length() > 0 ? createProfile.profileName : profileNumber + "");
-            settingsJson.put("profileNumber", profileNumber);
-            settingsJson.put("appAddress", app.appAddress);
-            settingsJson.put("launchApp", createProfile.launchApp);
-            settingsJson.put("forceClose", createProfile.forceCloseApp);
-
-            File settingsFile = new File(createProfilerSettings.getPath(), "settings");
+            //kill the app with sudo
             try {
-                List<String> f = new ArrayList<String>();
-                f.add("echo \"" + settingsJson.toString().replace("\"", "\'") + "\" > " + settingsFile);
-                f.add("chmod 777 " + settingsFile);
-                ShellUtil.RunAsRoot(f);
-            }catch (SecurityException ee){
-                ee.printStackTrace();
+                if (Integer.parseInt(thisShouldBeThePID) > 0) {
+                    try {
+                        List<String> comm = new ArrayList<String>();
+                        comm.add("kill " + thisShouldBeThePID);
+                        ShellUtil.RunAsRoot(comm);
+                    } catch (SecurityException ee) {
+                        ee.printStackTrace();
+                    }
+                }
+            } catch (NumberFormatException ex) {
+                Log.e("Profiler", thisShouldBeThePID + " is not a valid integer");
             }
-        }catch(Exception e){
-            e.printStackTrace();
+        }
+
+        if(profile.launchApp) {
+            //run the app
+            Intent LaunchIntent = App.app.getPackageManager().getLaunchIntentForPackage(profile.appComponent);
+            LaunchIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+            App.app.startActivity(LaunchIntent);
         }
     }
 
-    private static void copyApplicationDataFolder(String applicationName, int number, CreateProfile createProfile)
+    public static void copyApplicationDataFolder(String applicationName, int number, CreateProfile createProfile)
             throws IOException {
         copyApplicationDataFolder(applicationName, number, createProfile, false, "");
     }
 
     private static void copyApplicationDataFolder(String applicationName, int number, CreateProfile createProfile, boolean recurse, String filename)
             throws IOException {
-        if (!lock || recurse) {
-            lock = true;
+        if (!profile.lock || recurse) {
+            profile.lock = true;
             File sourceLocation;
             File targetLocation;
             if (createProfile != null) {
@@ -153,7 +110,8 @@ public class FileUtil {
             }catch (SecurityException ee){
                 ee.printStackTrace();
             }
-            if (sourceIsDir && (createProfile.foldersToCopy.contains(sourceLocation) || filename.length() == 0)) {
+            boolean secondTest = createProfile != null ? (createProfile.foldersToCopy.contains(sourceLocation) || filename.length() == 0) : true;
+            if (sourceIsDir && secondTest) {
                 if (!targetLocation.exists()) {
                     //copy the whole directory -RPa to recurse, preserve perm and ownership
                     try {
@@ -185,10 +143,10 @@ public class FileUtil {
                 }
             }
         }
-        lock = false;
+        profile.lock = false;
     }
 
-    public boolean delete(String location, boolean deleteBase){
+    public boolean deleteApplicationFolders(String location, boolean deleteBase){
         try {
             Log.d("deleting", location);
             List<String> f = new ArrayList<String>();
@@ -205,6 +163,7 @@ public class FileUtil {
         }
         return false;
     }
+
     static List<String> folders;
     static String baseFolder;
     public static List<String> getApplicationFileFolders(String applicationAddress, String filename){

@@ -12,4 +12,7 @@ public class Profile {
     public String profileName;
     public String profileNumber;
     public String appComponent;
+    public boolean forceClose;
+    public boolean launchApp;
+    public boolean lock;
 }
